@@ -2,12 +2,13 @@
 
 ## Intent
 
-Trace reducing trades back to originating opens using FIFO economic matching.
+Provide optional economic trace output for debugging and internal analysis, without presenting it as HMRC tax matching.
 
 ## Implementation Decisions
 
 - this is an economic trace, not HMRC tax matching
-- FIFO is fixed in v1
+- this is secondary to the symbol-ledger workflow and should not be the primary review surface
+- FIFO is fixed when economic tracing is used
 - openings and closings are inferred from IBKR `Code` flags and quantity sign
 - only reducing trades inside the requested date window are emitted
 
@@ -20,10 +21,11 @@ Trace reducing trades back to originating opens using FIFO economic matching.
 - stock sell consumes older buy lots in FIFO order
 - short option close consumes older sold-to-open lots in FIFO order
 - trace output remains stable across reruns
+- trace output remains clearly labeled as economic rather than tax matching
 
 ## PR Checklist
 
-- trace engine implemented
+- trace engine kept optional and clearly labeled
 - trace run persistence implemented
 - CSV output implemented
 - integration tests added
