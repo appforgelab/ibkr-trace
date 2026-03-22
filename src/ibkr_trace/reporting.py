@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import csv
+import re
 from datetime import date
+from decimal import Decimal
 from pathlib import Path
 
 from sqlalchemy import and_, func, select
@@ -10,6 +12,10 @@ from sqlalchemy.engine import Engine
 from ibkr_trace.config import DEFAULT_REPORTS_DIR, ensure_runtime_dirs
 from ibkr_trace.db import ensure_database
 from ibkr_trace.schema import cash_income_events, instruments, trade_events
+from ibkr_trace.util import canonical_decimal_text, parse_decimal
+
+
+SAFE_REPORT_TOKEN_RE = re.compile(r"[^A-Za-z0-9._-]+")
 
 
 def _write_csv(path: Path, rows: list[dict[str, object]], fieldnames: list[str]) -> None:
@@ -18,6 +24,11 @@ def _write_csv(path: Path, rows: list[dict[str, object]], fieldnames: list[str])
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(rows)
+
+
+def _safe_report_token(value: str) -> str:
+    token = SAFE_REPORT_TOKEN_RE.sub("_", value.strip()).strip("_")
+    return token or "report"
 
 
 def write_year_reports(
@@ -148,4 +159,69 @@ def write_symbol_report(
 
     output_path = output_root / f"symbols_{suffix}.csv"
     _write_csv(output_path, symbol_rows, ["asset_category", "symbol", "trade_count"])
+    return str(output_path)
+
+
+def write_ledger_report(
+    engine: Engine,
+    symbol: str,
+    end: date,
+    output_dir: Path | None = None,
+) -> str:
+    ensure_database(engine)
+    ensure_runtime_dirs()
+    output_root = output_dir or DEFAULT_REPORTS_DIR
+    symbol_value = symbol.strip()
+    running_quantity = Decimal("0")
+    ledger_rows: list[dict[str, object]] = []
+
+    with engine.connect() as conn:
+        stmt = (
+            select(
+                trade_events.c.id,
+                trade_events.c.event_date,
+                trade_events.c.broker_timestamp_text,
+                trade_events.c.asset_category,
+                trade_events.c.currency,
+                trade_events.c.symbol,
+                trade_events.c.quantity_text,
+                trade_events.c.trade_price_text,
+                trade_events.c.proceeds_text,
+                trade_events.c.comm_fee_text,
+                trade_events.c.code_text,
+            )
+            .where(and_(trade_events.c.symbol == symbol_value, trade_events.c.event_date <= end))
+            .order_by(trade_events.c.broker_timestamp, trade_events.c.id)
+        )
+        for record in conn.execute(stmt).mappings():
+            quantity = parse_decimal(record["quantity_text"]) or Decimal("0")
+            running_quantity += quantity
+            ledger_rows.append(
+                {
+                    **dict(record),
+                    "direction": "BUY" if quantity > 0 else "SELL" if quantity < 0 else "",
+                    "running_quantity_text": canonical_decimal_text(str(running_quantity)) or "0",
+                }
+            )
+
+    output_path = output_root / f"ledger_{_safe_report_token(symbol_value)}_{end.isoformat()}.csv"
+    _write_csv(
+        output_path,
+        ledger_rows,
+        [
+            "id",
+            "event_date",
+            "broker_timestamp_text",
+            "asset_category",
+            "currency",
+            "symbol",
+            "direction",
+            "quantity_text",
+            "trade_price_text",
+            "comm_fee_text",
+            "proceeds_text",
+            "code_text",
+            "running_quantity_text",
+        ],
+    )
     return str(output_path)

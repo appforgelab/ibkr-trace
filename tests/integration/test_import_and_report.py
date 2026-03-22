@@ -5,10 +5,12 @@ from datetime import date
 from pathlib import Path
 
 from sqlalchemy import func, select
+from typer.testing import CliRunner
 
+from ibkr_trace.cli import app
 from ibkr_trace.import_fx import import_fx_rates
 from ibkr_trace.import_ibkr import import_ibkr_activity
-from ibkr_trace.reporting import write_symbol_report, write_year_reports
+from ibkr_trace.reporting import write_ledger_report, write_symbol_report, write_year_reports
 from ibkr_trace.schema import cash_income_events, fx_rates, raw_section_headers, trade_event_codes, trade_events
 
 
@@ -99,6 +101,73 @@ def test_symbol_report_respects_narrower_window(engine, fixture_dir: Path, tmp_p
     assert rows == [
         {"asset_category": "Equity and Index Options", "symbol": "ABC 20JUN25 10 C", "trade_count": "1"},
     ]
+
+
+def test_ledger_report_includes_all_trades_through_end_with_running_totals(engine, fixture_dir: Path, tmp_path: Path) -> None:
+    import_ibkr_activity(engine, str(fixture_dir / "ib_activity_part2_ytd.csv"))
+    output_dir = tmp_path / "reports"
+    output = write_ledger_report(engine, symbol="ABC", end=date(2025, 3, 31), output_dir=output_dir)
+
+    assert Path(output).name == "ledger_ABC_2025-03-31.csv"
+
+    with open(output, newline="", encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle))
+
+    assert [row["broker_timestamp_text"] for row in rows] == [
+        "2025-01-10, 09:30:00",
+        "2025-02-10, 09:30:00",
+        "2025-03-15, 09:30:00",
+    ]
+    assert [row["direction"] for row in rows] == ["BUY", "BUY", "SELL"]
+    assert [row["quantity_text"] for row in rows] == ["100", "50", "-120"]
+    assert [row["running_quantity_text"] for row in rows] == ["100", "150", "30"]
+
+
+def test_report_ledger_cli_uses_exact_symbol_and_stable_filename(fixture_dir: Path, tmp_path: Path) -> None:
+    runner = CliRunner()
+    db_path = tmp_path / "ibkr.sqlite"
+    output_dir = tmp_path / "reports"
+
+    import_result = runner.invoke(
+        app,
+        [
+            "import",
+            "ibkr",
+            "--path",
+            str(fixture_dir / "ib_activity_part2_ytd.csv"),
+            "--db",
+            str(db_path),
+        ],
+    )
+    assert import_result.exit_code == 0
+
+    result = runner.invoke(
+        app,
+        [
+            "report",
+            "ledger",
+            "--symbol",
+            "ABC 20JUN25 10 C",
+            "--end",
+            "2025-04-30",
+            "--db",
+            str(db_path),
+            "--output-dir",
+            str(output_dir),
+        ],
+    )
+
+    assert result.exit_code == 0
+    output = output_dir / "ledger_ABC_20JUN25_10_C_2025-04-30.csv"
+    assert f"ledger: {output}" in result.stdout
+
+    with output.open(newline="", encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle))
+
+    assert [row["symbol"] for row in rows] == ["ABC 20JUN25 10 C"] * 4
+    assert [row["quantity_text"] for row in rows] == ["-1", "-1", "1", "1"]
+    assert [row["running_quantity_text"] for row in rows] == ["-1", "-2", "-1", "0"]
+    assert rows[-1]["code_text"] == "C;Ep"
 
 
 def test_fx_import_is_idempotent(engine, fixture_dir: Path) -> None:
