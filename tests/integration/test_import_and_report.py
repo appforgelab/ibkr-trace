@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import csv
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 import pytest
@@ -12,7 +12,7 @@ from ibkr_trace.cli import app
 from ibkr_trace.import_fx import import_fx_rates
 from ibkr_trace.import_ibkr import import_ibkr_activity
 from ibkr_trace.reporting import _safe_report_token, write_ledger_report, write_symbol_report, write_year_reports
-from ibkr_trace.schema import cash_income_events, fx_rates, raw_section_headers, trade_event_codes, trade_events
+from ibkr_trace.schema import cash_income_events, fx_rates, instruments, raw_section_headers, trade_event_codes, trade_events
 
 
 def _row_count(engine, table) -> int:
@@ -141,6 +141,54 @@ def test_ledger_report_writes_header_only_for_unknown_symbol(engine, fixture_dir
         rows = list(csv.DictReader(handle))
 
     assert rows == []
+
+
+def test_ledger_report_rejects_ambiguous_symbol_across_multiple_instruments(engine, fixture_dir: Path, tmp_path: Path) -> None:
+    import_ibkr_activity(engine, str(fixture_dir / "ib_activity_part2_ytd.csv"))
+
+    with engine.begin() as conn:
+        source_file_id = conn.execute(select(trade_events.c.source_file_id).limit(1)).scalar_one()
+        instrument_id = conn.execute(
+            instruments.insert().values(
+                instrument_key="ambiguous:ABC:option",
+                asset_category="Equity and Index Options",
+                symbol="ABC",
+                description="Synthetic ambiguous ABC option",
+                underlying_symbol="ABC",
+                instrument_type="CALL",
+                expiry_date=date(2025, 12, 19),
+                option_right="C",
+                strike_text="10",
+                created_at=datetime(2025, 3, 20, 10, 0, 0),
+                updated_at=datetime(2025, 3, 20, 10, 0, 0),
+            )
+        ).inserted_primary_key[0]
+        conn.execute(
+            trade_events.insert().values(
+                event_fingerprint="ambiguous-abc-trade",
+                source_file_id=source_file_id,
+                source_row_index=9999,
+                instrument_id=instrument_id,
+                data_discriminator="Order",
+                asset_category="Equity and Index Options",
+                currency="USD",
+                symbol="ABC",
+                broker_timestamp_text="2025-03-20, 10:00:00",
+                broker_timestamp=datetime(2025, 3, 20, 10, 0, 0),
+                event_date=date(2025, 3, 20),
+                quantity_text="1",
+                trade_price_text="1",
+                proceeds_text="-100",
+                comm_fee_text="-1",
+                basis_text="101",
+                realized_pl_text="0",
+                raw_payload_json="{}",
+                created_at=datetime(2025, 3, 20, 10, 0, 0),
+            )
+        )
+
+    with pytest.raises(ValueError, match="matched multiple instruments"):
+        write_ledger_report(engine, symbol="ABC", end=date(2025, 3, 31), output_dir=tmp_path / "reports")
 
 
 def test_report_ledger_cli_uses_exact_symbol_and_stable_filename(fixture_dir: Path, tmp_path: Path) -> None:

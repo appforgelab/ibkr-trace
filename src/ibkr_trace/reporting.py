@@ -178,6 +178,23 @@ def write_ledger_report(
     ledger_rows: list[dict[str, object]] = []
 
     with engine.connect() as conn:
+        instrument_rows = list(
+            conn.execute(
+                select(
+                    trade_events.c.instrument_id,
+                    trade_events.c.asset_category,
+                )
+                .where(and_(trade_events.c.symbol == symbol_value, trade_events.c.event_date <= end))
+                .distinct()
+                .order_by(trade_events.c.instrument_id)
+            ).mappings()
+        )
+        if len(instrument_rows) > 1:
+            raise ValueError(
+                f"Ledger symbol {symbol_value!r} matched multiple instruments through {end.isoformat()}; "
+                "ledger reporting requires one instrument per exact symbol."
+            )
+
         stmt = (
             select(
                 trade_events.c.id,
