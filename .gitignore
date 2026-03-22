@@ -1,0 +1,15 @@
+.venv/
+.uv-cache/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.DS_Store
+
+data/sources/
+data/derived/
+
+*.pyc
+*.pyo
+*.sqlite

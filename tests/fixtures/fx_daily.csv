@@ -1,0 +1,4 @@
+date,base_currency,quote_currency,rate,source_name
+2025-03-31,GBP,USD,1.293,fixture
+2025-04-01,GBP,USD,1.287,fixture
+2025-04-30,GBP,USD,1.251,fixture

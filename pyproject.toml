@@ -1,0 +1,27 @@
+[project]
+name = "ibkr-trace"
+version = "0.1.0"
+description = "Idempotent IBKR activity importer, report generator, and FIFO trace tool"
+readme = "README.md"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+  "alembic>=1.16.0,<2.0.0",
+  "sqlalchemy>=2.0.38,<3.0.0",
+  "typer>=0.16.0,<1.0.0",
+]
+
+[project.scripts]
+ibkr-trace = "ibkr_trace.cli:app"
+
+[dependency-groups]
+dev = [
+  "pytest>=8.4.0,<9.0.0",
+]
+
+[build-system]
+requires = ["hatchling>=1.27.0"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

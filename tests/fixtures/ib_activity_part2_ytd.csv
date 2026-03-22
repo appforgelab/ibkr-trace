@@ -1,0 +1,27 @@
+Statement,Header,Field Name,Field Value
+Statement,Data,Title,Activity Statement
+Statement,Data,Period,"January 1, 2025 - June 30, 2025"
+Trades,Header,DataDiscriminator,Asset Category,Currency,Symbol,Date/Time,Quantity,T. Price,C. Price,Proceeds,Comm/Fee,Basis,Realized P/L,Realized P/L %,MTM P/L,Code
+Trades,Data,Order,Stocks,USD,ABC,"2025-01-10, 09:30:00",100,10,10,-1000,-1,1001,0,0,0,O
+Trades,Data,Order,Stocks,USD,ABC,"2025-02-10, 09:30:00",50,12,12,-600,-1,601,0,0,0,O
+Trades,Data,Order,Stocks,USD,ABC,"2025-03-15, 09:30:00",-120,13,13,1560,-1,-1240,320,25.81,0,C
+Trades,Data,Order,Stocks,USD,ABC,"2025-06-01, 09:30:00",-30,11,11,330,-1,-361,-32,-8.86,0,C
+Trades,Header,DataDiscriminator,Asset Category,Currency,Symbol,Date/Time,Quantity,T. Price,C. Price,Proceeds,Comm/Fee,Basis,Realized P/L,Realized P/L %,MTM P/L,Code
+Trades,Data,Order,Equity and Index Options,USD,ABC 20JUN25 10 C,"2025-01-05, 09:45:00",-1,1.5,1.5,150,-1,-149,0,0,0,O
+Trades,Data,Order,Equity and Index Options,USD,ABC 20JUN25 10 C,"2025-01-10, 09:45:00",-1,1.2,1.2,120,-1,-119,0,0,0,O
+Trades,Data,Order,Equity and Index Options,USD,ABC 20JUN25 10 C,"2025-03-01, 09:45:00",1,0.5,0.5,-50,-1,49,-70,-58.82,0,C
+Trades,Data,Order,Equity and Index Options,USD,ABC 20JUN25 10 C,"2025-04-01, 09:45:00",1,0.1,0.1,-10,-1,49,-110,-91.67,0,C;Ep
+Financial Instrument Information,Header,Asset Category,Symbol,Description,Conid,Security ID,Underlying,Listing Exch,Multiplier,Type,Code
+Financial Instrument Information,Data,Stocks,ABC,ABC CORP,1001,US0000000001,ABC,NYSE,1,COMMON,
+Financial Instrument Information,Header,Asset Category,Symbol,Description,Conid,Security ID,Underlying,Listing Exch,Multiplier,Expiry,Delivery Month,Type,Strike,Code
+Financial Instrument Information,Data,Equity and Index Options,ABC 20JUN25 10 C,ABC JUN25 10 CALL,2001,OPT0001,ABC,CBOE,100,2025-06-20,202506,CALL,10,
+Dividends,Header,Currency,Date,Description,Amount
+Dividends,Data,USD,2025-03-20,ABC(US0000000001) Cash Dividend USD 0.10 per Share,15
+Dividends,Data,USD,2025-04-20,ABC(US0000000001) Cash Dividend USD 0.10 per Share,3
+Interest,Header,Currency,Date,Description,Amount
+Interest,Data,USD,2025-03-31,USD Credit Interest for Mar-2025,1.23
+Interest,Data,USD,2025-04-30,USD Credit Interest for Apr-2025,0.75
+Codes,Header,Code,Meaning,Code (Cont.),Meaning (Cont.)
+Codes,Data,O,Opening Trade,,
+Codes,Data,C,Closing Trade,,
+Codes,Data,Ep,Resulted from an Expired Position,,
