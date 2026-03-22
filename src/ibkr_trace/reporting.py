@@ -4,7 +4,7 @@ import csv
 from datetime import date
 from pathlib import Path
 
-from sqlalchemy import and_, select
+from sqlalchemy import and_, func, select
 from sqlalchemy.engine import Engine
 
 from ibkr_trace.config import DEFAULT_REPORTS_DIR, ensure_runtime_dirs
@@ -118,3 +118,34 @@ def write_year_reports(
         "dividends": str(dividend_path),
         "interest": str(interest_path),
     }
+
+
+def write_symbol_report(
+    engine: Engine,
+    start: date,
+    end: date,
+    output_dir: Path | None = None,
+) -> str:
+    ensure_database(engine)
+    ensure_runtime_dirs()
+    output_root = output_dir or DEFAULT_REPORTS_DIR
+    suffix = f"{start.isoformat()}_{end.isoformat()}"
+    symbol_rows: list[dict[str, object]] = []
+
+    with engine.connect() as conn:
+        stmt = (
+            select(
+                trade_events.c.asset_category,
+                trade_events.c.symbol,
+                func.count().label("trade_count"),
+            )
+            .where(and_(trade_events.c.event_date >= start, trade_events.c.event_date <= end))
+            .group_by(trade_events.c.asset_category, trade_events.c.symbol)
+            .order_by(trade_events.c.asset_category, trade_events.c.symbol)
+        )
+        for record in conn.execute(stmt).mappings():
+            symbol_rows.append(dict(record))
+
+    output_path = output_root / f"symbols_{suffix}.csv"
+    _write_csv(output_path, symbol_rows, ["asset_category", "symbol", "trade_count"])
+    return str(output_path)

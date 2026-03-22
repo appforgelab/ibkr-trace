@@ -15,13 +15,14 @@ Create the local repo, project structure, docs, CLI shell, schema module, and Al
 ## Interfaces Touched
 
 - `uv sync`
-- `uv run ibkr-trace --help`
+- `source .venv/bin/activate`
+- `ibkr-trace --help`
 
 ## Acceptance Tests
 
 - project installs into `.venv`
 - `ibkr-trace --help` works
-- database path resolves under `data/derived/db/`
+- database path resolves under `data/db/`
 
 ## PR Checklist
 

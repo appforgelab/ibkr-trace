@@ -1,6 +1,6 @@
 # ibkr-trace
 
-`ibkr-trace` is a local CLI project for importing Interactive Brokers Activity CSVs into SQLite and producing repeatable, review-friendly trade ledgers and year-window reports.
+`ibkr-trace` is a local CLI project for importing Interactive Brokers Activity CSVs into SQLite and producing repeatable, review-friendly symbol activity reports and year-window exports.
 
 ## Disclaimer
 
@@ -19,8 +19,11 @@ V1 covers:
 - normalized trades, instrument metadata, dividends, and interest
 - absolute date-window CSV reports
 - symbol discovery for a specified period
-- per-symbol trade ledgers with running position totals
 - daily FX import support for later GBP-enriched reports
+
+Planned next:
+
+- per-symbol trade ledgers with running position totals
 
 V1 does not cover:
 
@@ -45,8 +48,7 @@ This scope boundary is intentional so the project remains audit-friendly and doe
 - `src/ibkr_trace/`: application code
 - `docs/`: roadmap and phase specs
 - `tests/`: unit, integration, and sanitized fixtures
-- `data/sources/`: local raw inputs, ignored by git
-- `data/derived/`: local DB and report outputs, ignored by git
+- `data/`: local inputs, runtime SQLite database, and generated reports, ignored by git
 
 ## Workflow
 
@@ -56,29 +58,43 @@ Create the local environment:
 uv sync
 ```
 
+Activate the local virtual environment:
+
+```bash
+source .venv/bin/activate
+```
+
 Import IBKR Activity CSV files:
 
 ```bash
-uv run ibkr-trace import ibkr --path data/sources/ibkr/activity
+ibkr-trace import ibkr --path data/ibkr/activity
 ```
 
 Import daily FX rates:
 
 ```bash
-uv run ibkr-trace import fx --path data/sources/fx/gbp_usd_daily.csv
+ibkr-trace import fx --path data/fx/gbp_usd_daily.csv
 ```
 
 Write year-window reports:
 
 ```bash
-uv run ibkr-trace report year --start 2025-04-06 --end 2026-04-05
+ibkr-trace report year --start 2025-04-06 --end 2026-04-05
+```
+
+Write the symbol activity report for a period:
+
+```bash
+ibkr-trace report symbols --start 2025-04-06 --end 2026-04-05
 ```
 
 Current trace support:
 
 ```bash
-uv run ibkr-trace trace --start 2025-04-06 --end 2026-04-05
+ibkr-trace trace --start 2025-04-06 --end 2026-04-05
 ```
+
+If you prefer not to activate `.venv`, you can still run the CLI with `uv run ibkr-trace ...`, but the activated-shell workflow is the default documented path.
 
 The preferred manual-review workflow for UK tax prep is:
 
@@ -89,8 +105,9 @@ That is intentionally simpler and less misleading than pretending to apply HMRC 
 
 ## Data Conventions
 
-- raw broker files are stored locally under `data/sources/` and are not tracked in git
-- the primary SQLite database is `data/derived/db/ibkr.sqlite`
+- raw broker files are stored locally under `data/` and are not tracked in git
+- the primary SQLite database is `data/db/ibkr.sqlite`
+- generated CSV outputs are written under `data/reports/`
 - all broker numeric values are stored as canonical decimal-safe text
 - current trace output is an economic FIFO trace, not an HMRC tax trace
 - the preferred review model is a symbol ledger with running totals rather than inferred tax matching
