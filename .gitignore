@@ -7,8 +7,7 @@ __pycache__/
 htmlcov/
 .DS_Store
 
-data/sources/
-data/derived/
+data/
 
 *.pyc
 *.pyo

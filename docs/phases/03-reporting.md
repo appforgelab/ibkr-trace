@@ -7,7 +7,7 @@ Export review-friendly reports for a period and make it easy to inspect one symb
 ## Implementation Decisions
 
 - use absolute date windows rather than tax-year shortcuts
-- write outputs under `data/derived/reports/`
+- write outputs under `data/reports/`
 - keep reports flat and review-friendly
 - add a period-level symbol list so the user can see which instruments were active in the chosen window
 - add a per-symbol ledger view that shows every trade in time order with a running open quantity
@@ -15,9 +15,9 @@ Export review-friendly reports for a period and make it easy to inspect one symb
 
 ## Interfaces Touched
 
-- `uv run ibkr-trace report year --start YYYY-MM-DD --end YYYY-MM-DD`
-- `uv run ibkr-trace report symbols --start YYYY-MM-DD --end YYYY-MM-DD`
-- `uv run ibkr-trace report ledger --symbol SYMBOL --end YYYY-MM-DD`
+- `ibkr-trace report year --start YYYY-MM-DD --end YYYY-MM-DD`
+- `ibkr-trace report symbols --start YYYY-MM-DD --end YYYY-MM-DD`
+- `ibkr-trace report ledger --symbol SYMBOL --end YYYY-MM-DD`
 
 ## Acceptance Tests
 

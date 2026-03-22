@@ -5,7 +5,7 @@
 - repo root: project-local `ibkr/` directory
 - repo/project/CLI name: `ibkr-trace`
 - Python package: `ibkr_trace`
-- database path: `data/derived/db/ibkr.sqlite`
+- database path: `data/db/ibkr.sqlite`
 - primary goal: local, idempotent ledger reconstruction for IBKR Activity CSV data, with review-friendly symbol discovery and per-symbol ledgers
 
 ## Scope
@@ -70,12 +70,13 @@ Sections staged but not normalized in v1:
 ## Interfaces
 
 - `uv sync`
-- `uv run ibkr-trace import ibkr --path <file-or-dir>`
-- `uv run ibkr-trace import fx --path <file>`
-- `uv run ibkr-trace report year --start YYYY-MM-DD --end YYYY-MM-DD`
-- `uv run ibkr-trace report symbols --start YYYY-MM-DD --end YYYY-MM-DD`
-- `uv run ibkr-trace report ledger --symbol SYMBOL --end YYYY-MM-DD`
-- `uv run ibkr-trace trace --start YYYY-MM-DD --end YYYY-MM-DD [--symbol SYMBOL]`
+- `source .venv/bin/activate`
+- `ibkr-trace import ibkr --path <file-or-dir>`
+- `ibkr-trace import fx --path <file>`
+- `ibkr-trace report year --start YYYY-MM-DD --end YYYY-MM-DD`
+- `ibkr-trace report symbols --start YYYY-MM-DD --end YYYY-MM-DD`
+- `ibkr-trace report ledger --symbol SYMBOL --end YYYY-MM-DD`
+- `ibkr-trace trace --start YYYY-MM-DD --end YYYY-MM-DD [--symbol SYMBOL]`
 
 ## PR Map
 

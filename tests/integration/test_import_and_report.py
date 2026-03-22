@@ -8,7 +8,7 @@ from sqlalchemy import func, select
 
 from ibkr_trace.import_fx import import_fx_rates
 from ibkr_trace.import_ibkr import import_ibkr_activity
-from ibkr_trace.reporting import write_year_reports
+from ibkr_trace.reporting import write_symbol_report, write_year_reports
 from ibkr_trace.schema import cash_income_events, fx_rates, raw_section_headers, trade_event_codes, trade_events
 
 
@@ -72,6 +72,33 @@ def test_year_report_filters_by_date(engine, fixture_dir: Path, tmp_path: Path) 
     assert [row["broker_timestamp_text"] for row in trade_rows] == ["2025-04-01, 09:45:00"]
     assert [row["event_date"] for row in dividend_rows] == ["2025-04-20"]
     assert [row["event_date"] for row in interest_rows] == ["2025-04-30"]
+
+
+def test_symbol_report_groups_symbols_in_range(engine, fixture_dir: Path, tmp_path: Path) -> None:
+    import_ibkr_activity(engine, str(fixture_dir / "ib_activity_part2_ytd.csv"))
+    output_dir = tmp_path / "reports"
+    output = write_symbol_report(engine, start=date(2025, 1, 1), end=date(2025, 3, 31), output_dir=output_dir)
+
+    with open(output, newline="", encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle))
+
+    assert rows == [
+        {"asset_category": "Equity and Index Options", "symbol": "ABC 20JUN25 10 C", "trade_count": "3"},
+        {"asset_category": "Stocks", "symbol": "ABC", "trade_count": "3"},
+    ]
+
+
+def test_symbol_report_respects_narrower_window(engine, fixture_dir: Path, tmp_path: Path) -> None:
+    import_ibkr_activity(engine, str(fixture_dir / "ib_activity_part2_ytd.csv"))
+    output_dir = tmp_path / "reports"
+    output = write_symbol_report(engine, start=date(2025, 4, 1), end=date(2025, 4, 30), output_dir=output_dir)
+
+    with open(output, newline="", encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle))
+
+    assert rows == [
+        {"asset_category": "Equity and Index Options", "symbol": "ABC 20JUN25 10 C", "trade_count": "1"},
+    ]
 
 
 def test_fx_import_is_idempotent(engine, fixture_dir: Path) -> None:

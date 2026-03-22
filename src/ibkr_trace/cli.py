@@ -9,11 +9,11 @@ from ibkr_trace.config import DEFAULT_DB_PATH
 from ibkr_trace.db import get_engine
 from ibkr_trace.import_fx import import_fx_rates
 from ibkr_trace.import_ibkr import import_ibkr_activity
-from ibkr_trace.reporting import write_year_reports
+from ibkr_trace.reporting import write_symbol_report, write_year_reports
 from ibkr_trace.tracing import write_trace_report
 
 
-app = typer.Typer(help="Idempotent IBKR import, reporting, and FIFO trace CLI.")
+app = typer.Typer(help="Idempotent IBKR import and reporting CLI.")
 import_app = typer.Typer(help="Import broker or FX source files.")
 report_app = typer.Typer(help="Write review-friendly CSV reports.")
 app.add_typer(import_app, name="import")
@@ -61,6 +61,23 @@ def report_year(
     )
     for label, path in outputs.items():
         typer.echo(f"{label}: {path}")
+
+
+@report_app.command("symbols")
+def report_symbols(
+    start: str = typer.Option(..., help="Inclusive start date in YYYY-MM-DD format."),
+    end: str = typer.Option(..., help="Inclusive end date in YYYY-MM-DD format."),
+    db: str = typer.Option(str(DEFAULT_DB_PATH), help="SQLite database path."),
+    output_dir: str | None = typer.Option(None, help="Optional output directory override."),
+) -> None:
+    engine = get_engine(db)
+    output = write_symbol_report(
+        engine,
+        _parse_date(start),
+        _parse_date(end),
+        output_dir=Path(output_dir) if output_dir else None,
+    )
+    typer.echo(f"symbols: {output}")
 
 
 @app.command("trace")
