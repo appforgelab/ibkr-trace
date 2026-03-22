@@ -11,7 +11,10 @@ Export review-friendly reports for a period and make it easy to inspect one symb
 - keep reports flat and review-friendly
 - add a period-level symbol list so the user can see which instruments were active in the chosen window
 - add a per-symbol ledger view that shows every trade in time order with a running open quantity
-- make ledger output available beyond the requested period start when earlier trades are needed to understand the opening position
+- make the ledger use the exact `symbol` stored in `trade_events`
+- include all trades for that symbol from inception through the requested end date
+- define the running total as the cumulative signed quantity through each row
+- keep the ledger as a review aid only, with no FIFO or HMRC matching logic
 
 ## Interfaces Touched
 
@@ -26,6 +29,7 @@ Export review-friendly reports for a period and make it easy to inspect one symb
 - interest report contains only interest rows in range
 - symbol report lists only symbols with trades in the requested period
 - ledger report shows a symbol's trades in order with row quantity and running position total
+- ledger report filename is stable, such as `ledger_<symbol>_<end>.csv`
 
 ## PR Checklist
 

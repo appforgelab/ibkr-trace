@@ -78,6 +78,13 @@ Sections staged but not normalized in v1:
 - `ibkr-trace report ledger --symbol SYMBOL --end YYYY-MM-DD`
 - `ibkr-trace trace --start YYYY-MM-DD --end YYYY-MM-DD [--symbol SYMBOL]`
 
+Ledger reporting conventions:
+
+- the ledger is for the exact `symbol` stored in `trade_events`
+- include all trades for that symbol from inception through the requested end date
+- running total is the cumulative signed quantity through each row
+- ledger output is a review aid only and does not apply FIFO, HMRC matching, or tax logic
+
 ## PR Map
 
 - PR 1: bootstrap repo, docs, schema, Alembic wiring, empty CLI shell
