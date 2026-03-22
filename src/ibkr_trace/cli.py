@@ -9,7 +9,7 @@ from ibkr_trace.config import DEFAULT_DB_PATH
 from ibkr_trace.db import get_engine
 from ibkr_trace.import_fx import import_fx_rates
 from ibkr_trace.import_ibkr import import_ibkr_activity
-from ibkr_trace.reporting import write_symbol_report, write_year_reports
+from ibkr_trace.reporting import write_ledger_report, write_symbol_report, write_year_reports
 from ibkr_trace.tracing import write_trace_report
 
 
@@ -78,6 +78,25 @@ def report_symbols(
         output_dir=Path(output_dir) if output_dir else None,
     )
     typer.echo(f"symbols: {output}")
+
+
+@report_app.command("ledger")
+def report_ledger(
+    symbol: str = typer.Option(..., help="Exact symbol stored in trade_events."),
+    end: str = typer.Option(..., help="Inclusive end date in YYYY-MM-DD format. Ledger includes all trades from inception through this date."),
+    db: str = typer.Option(str(DEFAULT_DB_PATH), help="SQLite database path."),
+    output_dir: str | None = typer.Option(None, help="Optional output directory override."),
+) -> None:
+    if not symbol.strip():
+        raise typer.BadParameter("Symbol must not be empty or whitespace.", param_hint="--symbol")
+    engine = get_engine(db)
+    output = write_ledger_report(
+        engine,
+        symbol=symbol,
+        end=_parse_date(end),
+        output_dir=Path(output_dir) if output_dir else None,
+    )
+    typer.echo(f"ledger: {output}")
 
 
 @app.command("trace")
