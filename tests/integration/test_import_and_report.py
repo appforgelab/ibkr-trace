@@ -4,13 +4,14 @@ import csv
 from datetime import date
 from pathlib import Path
 
+import pytest
 from sqlalchemy import func, select
 from typer.testing import CliRunner
 
 from ibkr_trace.cli import app
 from ibkr_trace.import_fx import import_fx_rates
 from ibkr_trace.import_ibkr import import_ibkr_activity
-from ibkr_trace.reporting import write_ledger_report, write_symbol_report, write_year_reports
+from ibkr_trace.reporting import _safe_report_token, write_ledger_report, write_symbol_report, write_year_reports
 from ibkr_trace.schema import cash_income_events, fx_rates, raw_section_headers, trade_event_codes, trade_events
 
 
@@ -123,6 +124,25 @@ def test_ledger_report_includes_all_trades_through_end_with_running_totals(engin
     assert [row["running_quantity_text"] for row in rows] == ["100", "150", "30"]
 
 
+def test_ledger_report_rejects_blank_symbol(engine, fixture_dir: Path, tmp_path: Path) -> None:
+    import_ibkr_activity(engine, str(fixture_dir / "ib_activity_part2_ytd.csv"))
+
+    with pytest.raises(ValueError, match="Symbol must not be empty or whitespace."):
+        write_ledger_report(engine, symbol="   ", end=date(2025, 3, 31), output_dir=tmp_path / "reports")
+
+
+def test_ledger_report_writes_header_only_for_unknown_symbol(engine, fixture_dir: Path, tmp_path: Path) -> None:
+    import_ibkr_activity(engine, str(fixture_dir / "ib_activity_part2_ytd.csv"))
+    output = write_ledger_report(engine, symbol="MISSING", end=date(2025, 3, 31), output_dir=tmp_path / "reports")
+
+    assert Path(output).name == "ledger_MISSING_2025-03-31.csv"
+
+    with open(output, newline="", encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle))
+
+    assert rows == []
+
+
 def test_report_ledger_cli_uses_exact_symbol_and_stable_filename(fixture_dir: Path, tmp_path: Path) -> None:
     runner = CliRunner()
     db_path = tmp_path / "ibkr.sqlite"
@@ -168,6 +188,10 @@ def test_report_ledger_cli_uses_exact_symbol_and_stable_filename(fixture_dir: Pa
     assert [row["quantity_text"] for row in rows] == ["-1", "-1", "1", "1"]
     assert [row["running_quantity_text"] for row in rows] == ["-1", "-2", "-1", "0"]
     assert rows[-1]["code_text"] == "C;Ep"
+
+
+def test_safe_report_token_defaults_for_empty_value() -> None:
+    assert _safe_report_token("") == "report"
 
 
 def test_fx_import_is_idempotent(engine, fixture_dir: Path) -> None:

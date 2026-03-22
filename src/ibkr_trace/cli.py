@@ -83,10 +83,12 @@ def report_symbols(
 @report_app.command("ledger")
 def report_ledger(
     symbol: str = typer.Option(..., help="Exact symbol stored in trade_events."),
-    end: str = typer.Option(..., help="Inclusive end date in YYYY-MM-DD format."),
+    end: str = typer.Option(..., help="Inclusive end date in YYYY-MM-DD format. Ledger includes all trades from inception through this date."),
     db: str = typer.Option(str(DEFAULT_DB_PATH), help="SQLite database path."),
     output_dir: str | None = typer.Option(None, help="Optional output directory override."),
 ) -> None:
+    if not symbol.strip():
+        raise typer.BadParameter("Symbol must not be empty or whitespace.", param_hint="--symbol")
     engine = get_engine(db)
     output = write_ledger_report(
         engine,

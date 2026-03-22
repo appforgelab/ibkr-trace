@@ -172,6 +172,8 @@ def write_ledger_report(
     ensure_runtime_dirs()
     output_root = output_dir or DEFAULT_REPORTS_DIR
     symbol_value = symbol.strip()
+    if not symbol_value:
+        raise ValueError("Symbol must not be empty or whitespace.")
     running_quantity = Decimal("0")
     ledger_rows: list[dict[str, object]] = []
 
@@ -186,8 +188,8 @@ def write_ledger_report(
                 trade_events.c.symbol,
                 trade_events.c.quantity_text,
                 trade_events.c.trade_price_text,
-                trade_events.c.proceeds_text,
                 trade_events.c.comm_fee_text,
+                trade_events.c.proceeds_text,
                 trade_events.c.code_text,
             )
             .where(and_(trade_events.c.symbol == symbol_value, trade_events.c.event_date <= end))
