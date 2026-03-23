@@ -70,7 +70,13 @@ Import IBKR Activity CSV files:
 ibkr-trace import ibkr --path data/ibkr/activity
 ```
 
-Import daily FX rates:
+Fetch daily GBP/USD rates from the Bank of England:
+
+```bash
+ibkr-trace fetch fx --start 2025-04-06 --end 2026-04-05
+```
+
+Import the fetched FX rates into the database:
 
 ```bash
 ibkr-trace import fx --path data/fx/gbp_usd_daily.csv

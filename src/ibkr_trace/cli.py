@@ -7,6 +7,7 @@ import typer
 
 from ibkr_trace.config import DEFAULT_DB_PATH
 from ibkr_trace.db import get_engine
+from ibkr_trace.fetch_fx import DEFAULT_OUTPUT_PATH as DEFAULT_FX_OUTPUT, fetch_and_save
 from ibkr_trace.import_fx import import_fx_rates
 from ibkr_trace.import_ibkr import import_ibkr_activity
 from ibkr_trace.reporting import write_ledger_report, write_symbol_report, write_year_reports
@@ -15,8 +16,10 @@ from ibkr_trace.tracing import write_trace_report
 
 app = typer.Typer(help="Idempotent IBKR import and reporting CLI.")
 import_app = typer.Typer(help="Import broker or FX source files.")
+fetch_app = typer.Typer(help="Fetch external data sources.")
 report_app = typer.Typer(help="Write review-friendly CSV reports.")
 app.add_typer(import_app, name="import")
+app.add_typer(fetch_app, name="fetch")
 app.add_typer(report_app, name="report")
 
 
@@ -41,6 +44,21 @@ def import_fx(path: str = typer.Option(..., help="Path to a daily FX CSV file.")
     engine = get_engine(db)
     summary = import_fx_rates(engine, path)
     typer.echo(f"FX import completed: run_id={summary['run_id']} files_seen={summary['files_seen']} files_new={summary['files_new']} fx_rates={summary['fx_rates']}")
+
+
+@fetch_app.command("fx")
+def fetch_fx(
+    start: str = typer.Option(..., help="Inclusive start date (YYYY-MM-DD)."),
+    end: str = typer.Option(..., help="Inclusive end date (YYYY-MM-DD)."),
+    output: str = typer.Option(str(DEFAULT_FX_OUTPUT), help="Output CSV path."),
+) -> None:
+    """Fetch GBP/USD daily rates from the Bank of England."""
+    summary = fetch_and_save(_parse_date(start), _parse_date(end), Path(output))
+    typer.echo(
+        f"FX fetch completed: rates_fetched={summary['rates_fetched']} "
+        f"from={summary['from_date']} to={summary['to_date']} "
+        f"output={summary['output_path']}"
+    )
 
 
 @report_app.command("year")
