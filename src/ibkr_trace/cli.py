@@ -65,7 +65,6 @@ def fetch_fx(
 def report_year(
     start: str = typer.Option(..., help="Inclusive start date in YYYY-MM-DD format."),
     end: str = typer.Option(..., help="Inclusive end date in YYYY-MM-DD format."),
-    symbol: str | None = typer.Option(None, help="Optional symbol filter."),
     db: str = typer.Option(str(DEFAULT_DB_PATH), help="SQLite database path."),
     output_dir: str | None = typer.Option(None, help="Optional output directory override."),
 ) -> None:
@@ -74,7 +73,6 @@ def report_year(
         engine,
         _parse_date(start),
         _parse_date(end),
-        symbol=symbol,
         output_dir=Path(output_dir) if output_dir else None,
     )
     for label, path in outputs.items():

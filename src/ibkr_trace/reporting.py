@@ -35,14 +35,12 @@ def write_year_reports(
     engine: Engine,
     start: date,
     end: date,
-    symbol: str | None = None,
     output_dir: Path | None = None,
 ) -> dict[str, str]:
     ensure_database(engine)
     ensure_runtime_dirs()
     output_root = output_dir or DEFAULT_REPORTS_DIR
     suffix = f"{start.isoformat()}_{end.isoformat()}"
-    symbol_value = symbol.strip() if symbol else None
 
     trade_rows: list[dict[str, object]] = []
     dividend_rows: list[dict[str, object]] = []
@@ -73,8 +71,6 @@ def write_year_reports(
             .where(and_(trade_events.c.event_date >= start, trade_events.c.event_date <= end))
             .order_by(trade_events.c.broker_timestamp, trade_events.c.id)
         )
-        if symbol_value:
-            trade_stmt = trade_stmt.where(trade_events.c.symbol == symbol_value)
         for record in conn.execute(trade_stmt).mappings():
             trade_rows.append(dict(record))
 

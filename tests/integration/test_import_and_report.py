@@ -238,6 +238,30 @@ def test_report_ledger_cli_uses_exact_symbol_and_stable_filename(fixture_dir: Pa
     assert rows[-1]["code_text"] == "C;Ep"
 
 
+def test_report_year_cli_does_not_accept_symbol_option(tmp_path: Path) -> None:
+    runner = CliRunner()
+    db_path = tmp_path / "ibkr.sqlite"
+
+    result = runner.invoke(
+        app,
+        [
+            "report",
+            "year",
+            "--start",
+            "2025-01-01",
+            "--end",
+            "2025-12-31",
+            "--db",
+            str(db_path),
+            "--symbol",
+            "ABC",
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert "No such option: --symbol" in result.output
+
+
 def test_safe_report_token_defaults_for_empty_value() -> None:
     assert _safe_report_token("") == "report"
 
