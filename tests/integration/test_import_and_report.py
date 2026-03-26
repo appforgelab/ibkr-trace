@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import re
 from datetime import date, datetime
 from pathlib import Path
 
@@ -13,6 +14,9 @@ from ibkr_trace.import_fx import import_fx_rates
 from ibkr_trace.import_ibkr import import_ibkr_activity
 from ibkr_trace.reporting import _safe_report_token, write_ledger_report, write_symbol_report, write_year_reports
 from ibkr_trace.schema import cash_income_events, fx_rates, instruments, raw_section_headers, trade_event_codes, trade_events
+
+
+ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-9;]*m")
 
 
 def _row_count(engine, table) -> int:
@@ -259,7 +263,9 @@ def test_report_year_cli_does_not_accept_symbol_option(tmp_path: Path) -> None:
     )
 
     assert result.exit_code != 0
-    assert "No such option: --symbol" in result.output
+    output = ANSI_ESCAPE_RE.sub("", result.output)
+    assert "No such option" in output
+    assert "--symbol" in output
 
 
 def test_safe_report_token_defaults_for_empty_value() -> None:
