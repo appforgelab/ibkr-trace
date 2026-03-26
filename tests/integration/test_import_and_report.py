@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import re
 from datetime import date, datetime
 from pathlib import Path
 
@@ -13,6 +14,9 @@ from ibkr_trace.import_fx import import_fx_rates
 from ibkr_trace.import_ibkr import import_ibkr_activity
 from ibkr_trace.reporting import _safe_report_token, write_ledger_report, write_symbol_report, write_year_reports
 from ibkr_trace.schema import cash_income_events, fx_rates, instruments, raw_section_headers, trade_event_codes, trade_events
+
+
+ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-9;]*m")
 
 
 def _row_count(engine, table) -> int:
@@ -236,6 +240,32 @@ def test_report_ledger_cli_uses_exact_symbol_and_stable_filename(fixture_dir: Pa
     assert [row["quantity_text"] for row in rows] == ["-1", "-1", "1", "1"]
     assert [row["running_quantity_text"] for row in rows] == ["-1", "-2", "-1", "0"]
     assert rows[-1]["code_text"] == "C;Ep"
+
+
+def test_report_year_cli_does_not_accept_symbol_option(tmp_path: Path) -> None:
+    runner = CliRunner()
+    db_path = tmp_path / "ibkr.sqlite"
+
+    result = runner.invoke(
+        app,
+        [
+            "report",
+            "year",
+            "--start",
+            "2025-01-01",
+            "--end",
+            "2025-12-31",
+            "--db",
+            str(db_path),
+            "--symbol",
+            "ABC",
+        ],
+    )
+
+    assert result.exit_code != 0
+    output = ANSI_ESCAPE_RE.sub("", result.output)
+    assert "No such option" in output
+    assert "--symbol" in output
 
 
 def test_safe_report_token_defaults_for_empty_value() -> None:
